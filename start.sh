@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR="/home/toropov/restream/shs"
+SCRIPT_DIR="/home/toropov/shs"
 
 for script in "$SCRIPT_DIR"/*.sh; do
     if [[ -f "$script" ]]; then
