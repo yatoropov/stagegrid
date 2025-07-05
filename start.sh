@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_DIR="/home/toropov/shs"
+SCRIPT_DIR="/home/toropov/stagegrid/shs"
 
 for script in "$SCRIPT_DIR"/*.sh; do
     if [[ -f "$script" ]]; then
