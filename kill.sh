@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo pkill -u www-data -e -f "bash|ffmpeg"
+sudo pkill -u toropov -e -f "bash|ffmpeg"
