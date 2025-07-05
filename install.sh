@@ -47,6 +47,9 @@ rtmp {
         application live {
             live on;
             record off;
+            drop_idle_publisher 10s;
+            # Ключовий момент: використання exec_push для трансляції через ffmpeg
+            exec_push /home/toropov/start.sh $name;
         }
     }
 }
