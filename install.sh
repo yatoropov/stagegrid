@@ -48,8 +48,7 @@ rtmp {
             live on;
             record off;
             drop_idle_publisher 10s;
-            # Ключовий момент: використання exec_push для трансляції через ffmpeg
-            exec_push /home/toropov/stagegrid/start.sh $name;
+            exec_push /home/toropov/stagegrid/start.sh;
         }
     }
 }
