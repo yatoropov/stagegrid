@@ -4,3 +4,4 @@ cd stagegrid
 chmod +x install.sh
 chmod +x start.sh
 chmod +x generate_restreams.sh
+chmod +x kill.sh
