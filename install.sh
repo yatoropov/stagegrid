@@ -44,7 +44,7 @@ rtmp {
         listen 1935;
         chunk_size 4096;
 
-        application live {
+        application onlinestage {
             live on;
             record off;
             drop_idle_publisher 10s;
