@@ -33,6 +33,7 @@ sudo pkill -f nginx || true
 
 # 📝 Створення базового конфігу nginx з RTMP
 sudo tee /usr/local/nginx/conf/nginx.conf > /dev/null <<'EOF'
+user toropov;
 worker_processes auto;
 
 events {
