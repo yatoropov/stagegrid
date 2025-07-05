@@ -1,9 +1,9 @@
 #!/bin/bash
 
 sudo apt update
-sudo add-apt-repository -y ppa:mc3man/trusty-media
+sudo apt upgrade
 sudo apt-get install -y ffmpeg
-sudo apt install -y nginx libnginx-mod-rtmp
+sudo -y ./nginx-rtmp.sh
 sudo systemctl restart nginx
 sudo apt install -y net-tools
 sudo apt install -y unzip
