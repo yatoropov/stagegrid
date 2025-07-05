@@ -1,3 +1,3 @@
 rm -r stagerid
-git clone git@github.com:yatoropov/stagegrid.git
+git clone https://github.com/yatoropov/stagegrid.git
 cd stagegrid
