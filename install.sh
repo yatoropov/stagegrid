@@ -32,7 +32,7 @@ sudo ln -sf /usr/local/nginx/sbin/nginx /usr/sbin/nginx
 sudo pkill -f nginx || true
 
 # 📝 Створення базового конфігу nginx з RTMP
-sudo tee /usr/local/nginx/conf/nginx.conf > /dev/null <<EOF
+sudo tee /usr/local/nginx/conf/nginx.conf > /dev/null <<'EOF'
 worker_processes auto;
 
 events {
