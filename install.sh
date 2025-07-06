@@ -41,7 +41,6 @@ ExecReload=/usr/local/nginx/sbin/nginx -s reload
 ExecStop=/usr/local/nginx/sbin/nginx -s quit
 PIDFile=/usr/local/nginx/logs/nginx.pid
 Restart=on-failure
-User=$(whoami)
 
 [Install]
 WantedBy=multi-user.target
