@@ -28,6 +28,30 @@ sudo make install
 # 🔗 Символічне посилання
 sudo ln -sf /usr/local/nginx/sbin/nginx /usr/sbin/nginx
 
+# 🔥 Створення systemd сервісу nginx-rtmp
+sudo tee /etc/systemd/system/nginx-rtmp.service > /dev/null <<EOF
+[Unit]
+Description=Custom NGINX RTMP Server
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/local/nginx/sbin/nginx
+ExecReload=/usr/local/nginx/sbin/nginx -s reload
+ExecStop=/usr/local/nginx/sbin/nginx -s quit
+PIDFile=/usr/local/nginx/logs/nginx.pid
+Restart=on-failure
+User=$(whoami)
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 🔄 Завантаження systemd юніта
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable nginx-rtmp
+
 #   Зупинка попереднього nginx (якщо працює)
 sudo pkill -f nginx || true
 
@@ -67,9 +91,9 @@ http {
 }
 EOF
 
-# ✅ Тест та запуск nginx
-sudo /usr/local/nginx/sbin/nginx -t
-sudo /usr/local/nginx/sbin/nginx
+# ✅ Тест та старт nginx через systemd
+sudo systemctl start nginx-rtmp
+sudo systemctl status nginx-rtmp --no-pager
 
 # 🔍 Перевірка RTMP-модуля
 /usr/local/nginx/sbin/nginx -V 2>&1 | grep rtmp || echo "⚠️ RTMP not found – перевір вручну"
