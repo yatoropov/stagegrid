@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="/home/toropov/stagegrid/shs"
 LOG_DIR="/tmp/restream-logs"
+MAIN_LOG="/tmp/restream-logs/start.log"  # Єдиний лог для всіх дій скрипта
 PID_FILE="/tmp/restream-pids/all.pids"
 LOCK_FILE="${PID_FILE}.lock"
 TARGETS_FILE="/tmp/targets.txt"
@@ -12,12 +13,19 @@ RETRY_DELAY=5
 # Створення необхідних директорій
 mkdir -p "$SCRIPT_DIR" "$LOG_DIR" "$(dirname "$PID_FILE")"
 
+# Функція логування (в єдиний лог і в stdout)
+log() {
+    local message="[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+    echo "$message" | tee -a "$MAIN_LOG"
+}
+
 # 🛑 Зупинка старих процесів
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] Killing old processes..."
+log "=== Starting script ==="
+log "Killing old processes..."
 if [[ -f "$PID_FILE" ]]; then
   while read -r pid; do
     if [[ -n "$pid" && "$pid" =~ ^[0-9]+$ ]] && ps -p "$pid" > /dev/null 2>&1; then
-      echo "[$(date +'%Y-%m-%d %H:%M:%S')] Killing PID $pid"
+      log "Killing PID $pid"
       kill "$pid" || true
     fi
   done < "$PID_FILE"
@@ -25,15 +33,19 @@ if [[ -f "$PID_FILE" ]]; then
 fi
 
 # 🧹 Очистка скриптів і логів
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] Cleaning old scripts and logs..."
+log "Cleaning old scripts and logs..."
 rm -rf "$SCRIPT_DIR"/*
 rm -rf "$LOG_DIR"/*
+touch "$MAIN_LOG"  # Створюємо головний лог
 
 # ⬇️ Завантаження конфігу
 HOSTNAME=$(hostname)
 CONFIG_URL="https://stage.pp.ua/${HOSTNAME}.txt"
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] Fetching config from $CONFIG_URL"
-curl -sSf --ssl-reqd "$CONFIG_URL" -o "$TARGETS_FILE"
+log "Fetching config from $CONFIG_URL"
+curl -sSf --ssl-reqd "$CONFIG_URL" -o "$TARGETS_FILE" || {
+    log "ERROR: Failed to download config from $CONFIG_URL"
+    exit 1
+}
 
 # 🧽 Нормалізація: DOS → UNIX
 if ! command -v dos2unix &> /dev/null; then
@@ -43,27 +55,27 @@ else
 fi
 
 # 🔁 Обробка конфігу
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] Parsing targets from $TARGETS_FILE..."
+log "Parsing targets from $TARGETS_FILE..."
 while IFS='|' read -r NAME URL || [[ -n "$NAME" ]]; do
   NAME=$(echo "$NAME" | xargs)
   URL=$(echo "$URL" | xargs)
 
   # 💡 Перевірка безпеки
   if [[ -z "$NAME" || -z "$URL" ]]; then
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [skip] Empty name or URL → NAME='$NAME' URL='$URL'"
+    log "[skip] Empty name or URL → NAME='$NAME' URL='$URL'"
     continue
   fi
 
   if [[ ! "$NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [skip] Invalid characters in NAME: $NAME"
+    log "[skip] Invalid characters in NAME: $NAME"
     continue
   fi
 
   SCRIPT_PATH="$SCRIPT_DIR/$NAME.sh"
-  LOG_PATH="$LOG_DIR/${NAME}_$(date +'%Y%m%d_%H%M%S').log"
+  STREAM_LOG="$LOG_DIR/${NAME}.log"  # Окремий лог для потоку
   INPUT="rtmp://127.0.0.1:1935/onlinestage/test"
 
-  echo "[$(date +'%Y-%m-%d %H:%M:%S')] [create] $SCRIPT_PATH → $URL"
+  log "Creating stream script: $SCRIPT_PATH → $URL"
 
   # Генерація скрипта для кожного потоку
   cat <<EOF > "$SCRIPT_PATH"
@@ -72,9 +84,13 @@ set -euo pipefail
 
 trap 'kill \$(jobs -p); wait; exit 0' SIGTERM SIGINT
 
+stream_log() {
+    echo "[\$(date +'%Y-%m-%d %H:%M:%S')] \$1" >> "$STREAM_LOG"
+}
+
 retry_count=0
 while [[ \$retry_count -lt $MAX_RETRIES ]]; do
-  echo "[\\\$(date +'%Y-%m-%d %H:%M:%S')] Starting ffmpeg for $NAME" >> "$LOG_PATH"
+  stream_log "Starting ffmpeg for $NAME"
   
   ffmpeg \\
     -hide_banner \\
@@ -86,23 +102,29 @@ while [[ \$retry_count -lt $MAX_RETRIES ]]; do
     -f flv \\
     -ignore_unknown \\
     -shortest \\
-    "$URL" >> "$LOG_PATH" 2>&1 &
+    "$URL" >> "$STREAM_LOG" 2>&1
   
-  FFMPEG_PID=\$!
-  ( flock -x 200; echo "\$FFMPEG_PID" >> "$PID_FILE"; ) 200>"$LOCK_FILE"
-  
-  wait \$FFMPEG_PID
+  EXIT_CODE=\$?
   retry_count=\$((retry_count + 1))
-  echo "[\\\$(date +'%Y-%m-%d %H:%M:%S')] FFmpeg exited for $NAME (retry \$retry_count/$MAX_RETRIES)" >> "$LOG_PATH"
-  sleep $RETRY_DELAY
+  
+  if [[ \$EXIT_CODE -eq 0 ]]; then
+    stream_log "FFmpeg completed successfully"
+    break
+  else
+    stream_log "FFmpeg failed (attempt \$retry_count/$MAX_RETRIES). Exit code: \$EXIT_CODE"
+    [[ \$retry_count -lt $MAX_RETRIES ]] && sleep $RETRY_DELAY
+  fi
 done
 
-echo "[\\\$(date +'%Y-%m-%d %H:%M:%S')] Max retries reached for $NAME. Exiting." >> "$LOG_PATH"
+if [[ \$retry_count -eq $MAX_RETRIES ]]; then
+  stream_log "ERROR: Max retries reached. Giving up."
+fi
 EOF
 
   chmod +x "$SCRIPT_PATH"
   bash "$SCRIPT_PATH" &
-  echo "[$(date +'%Y-%m-%d %H:%M:%S')] Started $NAME with PID $!"
+  log "Started stream '$NAME' with PID $!"
 done < "$TARGETS_FILE"
 
-echo "[$(date +'%Y-%m-%d %H:%M:%S')] All streams started successfully"
+log "All streams started successfully"
+log "=== Script completed ==="
