@@ -58,7 +58,7 @@ while IFS='|' read -r NAME URL || [[ -n "$NAME" ]]; do
   fi
 
   SCRIPT_PATH="$SCRIPT_DIR/$NAME.sh"
-  LOG_PATH="$LOG_DIR/${NAME}_$(date +%Y%m%d).log"
+  LOG_PATH="$LOG_DIR/${NAME}_$(date +%Y%m%d_%H%M%S).log"
   INPUT="rtmp://127.0.0.1:1935/onlinestage/test"
 
   echo "[create] $SCRIPT_PATH → $URL"
