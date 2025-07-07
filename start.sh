@@ -102,10 +102,10 @@ echo "=== [\$(date +'%Y-%m-%d %H:%M:%S')] Запуск потоку $name ==="
 
 # Функція перевірки стану
 health_check() {
-    if ! ping -c 1 -W 2 \$(echo "$url" | awk -F/ '{print \$3}') &> /dev/null; then
-        echo "ПОПЕРЕДЖЕННЯ: Проблеми з мережевим з'єднанням"
-        return 1
-    fi
+ #   if ! ping -c 1 -W 2 \$(echo "$url" | awk -F/ '{print \$3}') &> /dev/null; then
+ #       echo "ПОПЕРЕДЖЕННЯ: Проблеми з мережевим з'єднанням"
+ #       return 1
+ #   fi
     return 0
 }
 
