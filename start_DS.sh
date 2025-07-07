@@ -6,7 +6,7 @@ LOG_DIR="/tmp/restream-logs"
 PID_FILE="/tmp/restream-pids/all.pids"
 LOCK_FILE="${PID_FILE}.lock"
 TARGETS_FILE="/tmp/targets.txt"
-MAX_RETRIES=3
+MAX_RETRIES=8
 RETRY_DELAY=5
 
 mkdir -p "$SCRIPT_DIR" "$LOG_DIR" "$(dirname "$PID_FILE")"
