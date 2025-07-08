@@ -71,7 +71,7 @@ dos2unix "$TARGETS_FILE" 2>/dev/null || sed -i 's/\r$//' "$TARGETS_FILE"
 
 # Обробка цілей рестріму
 log "Аналіз цілей рестріму..."
-sleep 3
+sleep 5
 while IFS='|' read -r name url _; do
     name=$(echo "$name" | xargs | tr ' ' '_')
     url=$(echo "$url" | xargs)
