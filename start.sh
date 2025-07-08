@@ -109,6 +109,7 @@ while [[ \$attempt -lt $MAX_RETRIES ]]; do
     ffmpeg -hide_banner -loglevel warning -stats \\
         -re -i "$INPUT" \\
         -c copy -f flv \\
+        -flvflags no_duration_filesize \\
         "$url" &
         
     ffmpeg_pid=\$!
