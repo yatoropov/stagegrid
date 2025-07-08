@@ -108,16 +108,13 @@ while [[ \$attempt -lt $MAX_RETRIES ]]; do
     ffmpeg -hide_banner -loglevel warning -stats \\
         -re -i "$INPUT" \\
         -c copy -f flv \\
+        -flvflags no_duration_filesize \\
         "$url" &
         
     ffmpeg_pid=\$!
     ( flock -x 200; echo "\$ffmpeg_pid" >> "$PID_FILE"; ) 200>"$LOCK_FILE"
 
     wait \$ffmpeg_pid
-    exit_code=\$?
-    if [[ \$exit_code -ne 0 ]]; then
-        echo "FFmpeg завершився з помилкою (код: \$exit_code)"
-    fi
     attempt=\$((attempt+1))
     sleep $RETRY_DELAY
 done
@@ -128,9 +125,6 @@ EOF
     chmod +x "$script_file"
     sleep $HEALTH_CHECK_INTERVAL
     nohup bash "$script_file" &>/dev/null &
-    if ! ps -p $! >/dev/null; then
-        log "ПОМИЛКА: Не вдалося запустити потік $name"
-    fi
     log "Потік $name запущено (PID $!)"
 
 done < <(grep -v '^#' "$TARGETS_FILE") # Ігноруємо коментарі у конфігурації
