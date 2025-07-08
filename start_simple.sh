@@ -10,7 +10,7 @@ LOCK_FILE="${PID_FILE}.lock"
 TARGETS_FILE="/tmp/targets.txt"
 MAX_RETRIES=5                     # Збільшено кількість спроб
 RETRY_DELAY=10                    # Збільшено затримку між спробами
-HEALTH_CHECK_INTERVAL=60          # Інтервал перевірки стану (секунди)
+HEALTH_CHECK_INTERVAL=10          # Інтервал перевірки стану (секунди)
 INPUT="rtmp://127.0.0.1:1935/onlinestage/test"
 
 ### Ініціалізація ###
@@ -102,11 +102,7 @@ echo "=== [\$(date +'%Y-%m-%d %H:%M:%S')] Запуск потоку $name ==="
 
 # Функція перевірки стану
 health_check() {
- #   if ! ping -c 1 -W 2 \$(echo "$url" | awk -F/ '{print \$3}') &> /dev/null; then
- #       echo "ПОПЕРЕДЖЕННЯ: Проблеми з мережевим з'єднанням"
- #       return 1
- #   fi
-    return 0
+        return 0
 }
 
 # Головний цикл
@@ -119,6 +115,7 @@ while [[ \$attempt -lt $MAX_RETRIES ]]; do
         continue
     fi
 
+    sleep 5
     ffmpeg -hide_banner -loglevel warning -stats \\
         -re -i "$INPUT" \\
         -c copy -f flv \\
