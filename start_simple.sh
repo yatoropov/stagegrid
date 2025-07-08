@@ -10,7 +10,7 @@ LOCK_FILE="${PID_FILE}.lock"
 TARGETS_FILE="/tmp/targets.txt"
 MAX_RETRIES=5                     # Збільшено кількість спроб
 RETRY_DELAY=10                    # Збільшено затримку між спробами
-HEALTH_CHECK_INTERVAL=10          # Інтервал перевірки стану (секунди)
+HEALTH_CHECK_INTERVAL=3          # Інтервал перевірки стану (секунди)
 INPUT="rtmp://127.0.0.1:1935/onlinestage/test"
 
 ### Ініціалізація ###
@@ -100,22 +100,11 @@ set -euo pipefail
 exec >> "$stream_log" 2>&1
 echo "=== [\$(date +'%Y-%m-%d %H:%M:%S')] Запуск потоку $name ==="
 
-# Функція перевірки стану
-health_check() {
-        return 0
-}
-
 # Головний цикл
 attempt=0
 while [[ \$attempt -lt $MAX_RETRIES ]]; do
     echo "Спроба \$((attempt+1))/$MAX_RETRIES"
-    
-    if ! health_check; then
-        sleep $HEALTH_CHECK_INTERVAL
-        continue
-    fi
 
-    sleep 5
     ffmpeg -hide_banner -loglevel warning -stats \\
         -re -i "$INPUT" \\
         -c copy -f flv \\
@@ -134,6 +123,7 @@ echo "Досягнуто максимальну кількість спроб д
 EOF
 
     chmod +x "$script_file"
+    sleep $HEALTH_CHECK_INTERVAL
     nohup bash "$script_file" &>/dev/null &
     log "Потік $name запущено (PID $!)"
 
